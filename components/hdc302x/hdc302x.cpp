@@ -81,7 +81,7 @@ void HDC302xComponent::update() {
       uint16_t raw_temp = (raw_temp_humidity[0] << 8) | raw_temp_humidity[1];
       float temp = -45.0f + 175.0f * (raw_temp / 65536.0f);
       this->temperature_->publish_state(temp);
-      ESP_LOGD(TAG, "Got temperature=%.1f°C", temp);
+      ESP_LOGD(TAG, "Got temperature=%.2f°C", temp);
     } else {
       ESP_LOGW(TAG, "CRC mismatch in HDC302X temp data!");
       this->status_set_warning();
@@ -92,7 +92,7 @@ void HDC302xComponent::update() {
       uint16_t raw_humidity = (raw_temp_humidity[3] << 8) | raw_temp_humidity[4];
       float humidity = 100.0f * (raw_humidity / 65536.0f);
       this->humidity_->publish_state(humidity);
-      ESP_LOGD(TAG, "Got humidity=%.1f%%", humidity);
+      ESP_LOGD(TAG, "Got humidity=%.2f%%", humidity);
     } else {
       ESP_LOGW(TAG, "CRC mismatch in HDC302X humidity data!");
       this->status_set_warning();
