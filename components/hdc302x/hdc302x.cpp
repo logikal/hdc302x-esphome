@@ -36,11 +36,18 @@ template<size_t N> inline i2c::ErrorCode HDC302xComponent::safe_read(uint8_t (&d
 void HDC302xComponent::setup() {
   ESP_LOGCONFIG(TAG, "Setting up HDC302X...");
 
+  // Wait for power-up (device needs time after power-on)
+  delay(5);
+
   if (this->safe_write(HDC302X_CMD_SOFT_RESET) != i2c::ERROR_OK) {
     ESP_LOGW(TAG, "HDC302X soft reset failed!");
     this->status_set_warning();
     return;
   }
+
+  // According to datasheet, soft reset takes 1ms typical, 2ms max
+  delay(5);
+  ESP_LOGCONFIG(TAG, "HDC302X setup complete");
 }
 
 void HDC302xComponent::dump_config() {
@@ -55,14 +62,17 @@ void HDC302xComponent::dump_config() {
 }
 void HDC302xComponent::update() {
   if (safe_write(HDC302X_CMD_TEMP_AND_HUMIDITY) != i2c::ERROR_OK) {
+    ESP_LOGW(TAG, "Failed to send measurement command");
     this->status_set_warning();
     return;
   }
 
-  this->set_timeout("read_data", 20, [this]() {
+  // HDC302x measurement time: ~5ms typical, increase to 10ms for safety
+  this->set_timeout("read_data", 10, [this]() {
     uint8_t raw_temp_humidity[6] = {0};
     size_t raw_temp_humidity_len = sizeof(raw_temp_humidity);
     if (this->safe_read(raw_temp_humidity) != i2c::ERROR_OK) {
+      ESP_LOGW(TAG, "Failed to read measurement data");
       this->status_set_warning();
       return;
     }
