@@ -63,7 +63,8 @@ void HDC302xComponent::setup() {
   }
 
   // Wait for soft reset to complete (datasheet: 1ms typical, 2ms max)
-  delay(20);
+  // Add extra time to ensure sensor is fully ready for measurements
+  delay(100);
   ESP_LOGCONFIG(TAG, "HDC302X setup complete");
 }
 
