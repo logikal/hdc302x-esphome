@@ -36,17 +36,34 @@ template<size_t N> inline i2c::ErrorCode HDC302xComponent::safe_read(uint8_t (&d
 void HDC302xComponent::setup() {
   ESP_LOGCONFIG(TAG, "Setting up HDC302X...");
 
-  // Wait for power-up (device needs time after power-on)
-  delay(5);
+  // Wait longer for I2C bus recovery and sensor power-up
+  // This helps with intermittent detection after flashing
+  delay(50);
 
-  if (this->safe_write(HDC302X_CMD_SOFT_RESET) != i2c::ERROR_OK) {
-    ESP_LOGW(TAG, "HDC302X soft reset failed!");
+  // Try soft reset with retries to handle intermittent I2C issues
+  const uint8_t max_retries = 3;
+  bool success = false;
+  
+  for (uint8_t attempt = 0; attempt < max_retries; attempt++) {
+    if (this->safe_write(HDC302X_CMD_SOFT_RESET) == i2c::ERROR_OK) {
+      success = true;
+      break;
+    }
+    
+    if (attempt < max_retries - 1) {
+      ESP_LOGW(TAG, "HDC302X soft reset failed, retry %d/%d", attempt + 1, max_retries);
+      delay(100);  // Wait before retry
+    }
+  }
+
+  if (!success) {
+    ESP_LOGE(TAG, "HDC302X soft reset failed after %d attempts!", max_retries);
     this->status_set_warning();
     return;
   }
 
-  // According to datasheet, soft reset takes 1ms typical, 2ms max
-  delay(5);
+  // Wait for soft reset to complete (datasheet: 1ms typical, 2ms max)
+  delay(20);
   ESP_LOGCONFIG(TAG, "HDC302X setup complete");
 }
 
